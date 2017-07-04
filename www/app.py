@@ -1,3 +1,5 @@
+# _*_ coding: utf-8 _*_
+
 import logging
 
 import asyncio, os, json, time
@@ -13,7 +15,9 @@ async def read_server_ip_port():
         return ip.strip(),port.strip()
 
 async def index(request):
-    return web.Response(body=b'<h1>Awesome App</h1>', content_type='text/html')
+    #text = '<h1>Awesome App <br> %s </h1>' % time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
+    text = '<h5>永远不要让其他人知道你是谁!<h5>'
+    return web.Response(body=text.encode('gb2312'), content_type='text/html')
 
 async def init(loop):
     ip,port = await read_server_ip_port()
