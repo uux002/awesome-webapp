@@ -8,6 +8,8 @@ from aiohttp import web
 
 logging.basicConfig(level=logging.INFO)
 
+
+
 async def read_server_ip_port():
     with open('ip_config','r') as f:
         ip = f.readline()
