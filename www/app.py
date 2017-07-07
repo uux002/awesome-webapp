@@ -2,7 +2,10 @@
 
 import logging
 
-import asyncio, os, json, time
+import asyncio
+import os
+import json
+import time
 from datetime import datetime
 from aiohttp import web
 
@@ -15,26 +18,27 @@ from config import configs
 
 logging.basicConfig(level=logging.INFO)
 
+
 async def read_server_ip_port():
-    with open('ip_config','r') as f:
+    with open('ip_config', 'r') as f:
         ip = f.readline()
         port = f.readline()
-        return ip.strip(),port.strip()
+        return ip.strip(), port.strip()
 
 
 def init_jinja2(app, **kw):
     logging.info('init jinja2...')
     options = dict(
-        autoescape = kw.get('autoescape', True),
-        block_start_string = kw.get('block_start_string', '{%'),
-        block_end_string = kw.get('block_end_string', '%}'),
-        variable_start_string = kw.get('variable_start_string', '{{'),
-        variable_end_string = kw.get('variable_end_string', '}}'),
-        auto_reload = kw.get('auto_reload', True)
-    )
+        autoescape=kw.get('autoescape', True),
+        block_start_string=kw.get('block_start_string', '{%'),
+        block_end_string=kw.get('block_end_string', '%}'),
+        variable_start_string=kw.get('variable_start_string', '{{'),
+        variable_end_string=kw.get('variable_end_string', '}}'),
+        auto_reload=kw.get('auto_reload', True))
     path = kw.get('path', None)
     if path is None:
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+        path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'templates')
     logging.info('set jinja2 template path: %s' % path)
     env = Environment(loader=FileSystemLoader(path), **options)
     filters = kw.get('filters', None)
@@ -43,12 +47,15 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
+
 async def logger_factory(app, handler):
     async def logger(request):
         logging.info('Request: %s %s' % (request.method, request.path))
         # await asyncio.sleep(0.3)
         return (await handler(request))
+
     return logger
+
 
 async def data_factory(app, handler):
     async def parse_data(request):
@@ -56,11 +63,14 @@ async def data_factory(app, handler):
             if request.content_type.startswith('application/json'):
                 request.__data__ = await request.json()
                 logging.info('request json: %s' % str(request.__data__))
-            elif request.content_type.startswith('application/x-www-form-urlencoded'):
+            elif request.content_type.startswith(
+                    'application/x-www-form-urlencoded'):
                 request.__data__ = await request.post()
                 logging.info('request form: %s' % str(request.__data__))
         return (await handler(request))
+
     return parse_data
+
 
 async def response_factory(app, handler):
     async def response(request):
@@ -81,11 +91,15 @@ async def response_factory(app, handler):
         if isinstance(r, dict):
             template = r.get('__template__')
             if template is None:
-                resp = web.Response(body=json.dumps(r, ensure_ascii=False, default=lambda o: o.__dict__).encode('utf-8'))
+                resp = web.Response(body=json.dumps(
+                    r, ensure_ascii=False,
+                    default=lambda o: o.__dict__).encode('utf-8'))
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
-                resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
+                resp = web.Response(
+                    body=app['__templating__'].get_template(template).render(
+                        **r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
         if isinstance(r, int) and r >= 100 and r < 600:
@@ -98,7 +112,9 @@ async def response_factory(app, handler):
         resp = web.Response(body=str(r).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
         return resp
+
     return response
+
 
 def datetime_filter(t):
     delta = int(time.time() - t)
@@ -114,28 +130,33 @@ def datetime_filter(t):
     return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 
-
 async def index(request):
-    #text = '<h1>Awesome App <br> %s </h1>' % time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
+    # text = '<h1>Awesome App <br> %s </h1>' % time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
     text = '<h5>永远不要让其他人知道你是谁!<h5>'
     return web.Response(body=text.encode('gb2312'), content_type='text/html')
 
+
 async def init(loop):
-    await orm.create_pool(loop=loop, host= configs.db.host, port=configs.db.port, user=configs.db.user, password=configs.db.password, database=configs.db.database)
-    app = web.Application(loop=loop, middlewares=[
-        logger_factory, response_factory
-    ])
+    await orm.create_pool(
+        loop=loop,
+        host=configs.db.host,
+        port=configs.db.port,
+        user=configs.db.user,
+        password=configs.db.password,
+        database=configs.db.database)
+    app = web.Application(
+        loop=loop, middlewares=[logger_factory, response_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')
     add_static(app)
-    #ip,port = await read_server_ip_port()
-    srv = await loop.create_server(app.make_handler(), configs.web.host, configs.web.port)
-    logging.info('server started at %s:%s ...' % (configs.web.host, configs.web.port))
+    # ip,port = await read_server_ip_port()
+    srv = await loop.create_server(app.make_handler(), configs.web.host,
+                                   configs.web.port)
+    logging.info('server started at %s:%s ...' % (configs.web.host,
+                                                  configs.web.port))
     return srv
 
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(init(loop))
 loop.run_forever()
-
-
