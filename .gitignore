@@ -1,2 +1,4 @@
 .idea
 ip_config
+config_override.py
+www/__pycache__

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = 'FredShao'
-
 import asyncio, logging
 
 import aiomysql
